@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>原產地小本本</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;900&display=swap" rel="stylesheet">
+<style>
+  :root { --yellow: #ffe81f; --cyan: #4bd5ee; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; }
+  body { font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; color: var(--yellow); overflow: hidden; }
+
+  #stars { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage { position: fixed; inset: 0; overflow: hidden; }
+
+  /* 1. 開場藍字 */
+  .intro {
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 0 28px;
+    color: var(--cyan); font-size: clamp(18px, 5.2vw, 28px); line-height: 1.7; text-align: left; opacity: 0;
+  }
+  .intro p { margin: 0; max-width: 20em; }
+  .play .intro { animation: intro 5.5s ease-in-out .6s forwards; }
+  @keyframes intro { 0% { opacity: 0 } 18%, 82% { opacity: 1 } 100% { opacity: 0 } }
+
+  /* 2. 標題縮遠 */
+  .logo { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; opacity: 0; }
+  .logo h1 {
+    margin: 0; font-weight: 900; color: var(--yellow); line-height: 1.12; letter-spacing: .08em;
+    font-size: clamp(60px, 22vw, 120px); padding-left: .08em;
+  }
+  .play .logo { animation: logo 10s ease-in 6.6s forwards; }
+  @keyframes logo {
+    0% { opacity: 1; transform: scale(1.8); }
+    55% { opacity: 1; }
+    100% { opacity: 0; transform: scale(.04); }
+  }
+
+  /* 3. 字幕捲動 */
+  .crawl-wrap {
+    position: absolute; inset: 0; perspective: 340px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 4%, #000 38%);
+            mask-image: linear-gradient(to bottom, transparent 4%, #000 38%);
+  }
+  .crawl {
+    position: absolute; top: 100%; left: 50%; width: min(86vw, 520px); margin-left: calc(min(86vw, 520px) / -2);
+    transform-origin: 50% 0; transform: rotateX(26deg);
+    font-size: clamp(22px, 6.4vw, 34px); font-weight: 500; line-height: 1.7; text-align: justify; letter-spacing: .04em;
+    color: var(--yellow);
+  }
+  .play .crawl { animation: crawl 70s linear 8s forwards; }
+  @keyframes crawl {
+    from { transform: rotateX(26deg) translateY(0); }
+    to   { transform: rotateX(26deg) translateY(calc(-100% - 100vh)); }
+  }
+  .crawl .ep { text-align: center; margin: 0 0 .2em; letter-spacing: .2em; }
+  .crawl .title { text-align: center; font-weight: 900; margin: 0 0 1.2em; font-size: 1.15em; }
+  .crawl p { margin: 0 0 1.2em; }
+  .crawl .c { font-weight: 900; }
+  .c.red { color: #ff6b6f; } .c.green { color: #4fd98d; } .c.blue { color: #6ea8ff; } .c.yellow { color: var(--yellow); }
+  .crawl .end { text-align: center; font-weight: 900; font-size: 1.1em; margin-top: 1.4em; }
+
+  /* 按鈕 */
+  .actions {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; gap: 10px;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .btn {
+    height: 48px; padding: 0 22px; border-radius: 10px; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;
+    border: 1.5px solid var(--yellow); background: transparent; color: var(--yellow); text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .btn.primary { background: var(--yellow); color: #000; font-weight: 900; }
+  .btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+  /* 減少動態：改為靜態可捲動頁面 */
+  @media (prefers-reduced-motion: reduce) {
+    body { overflow: auto; }
+    .stage { position: static; overflow: visible; padding: 56px 0 120px; }
+    .intro { display: none; }
+    .logo { position: static; opacity: 1; padding: 0 0 32px; }
+    .crawl-wrap { position: static; perspective: none; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+    .crawl { position: static; margin: 0 auto; transform: none; }
+    .play .logo, .play .crawl, .play .intro { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<div class="stage play" id="stage">
+  <div class="intro"><p>很久很久以前，<br>在一間再普通不過的賣場裡……</p></div>
+
+  <div class="logo"><h1>原產地<br>小本本</h1></div>
+
+  <div class="crawl-wrap">
+    <div class="crawl">
+      <p class="ep">第一章</p>
+      <p class="title">包裝背面的祕密</p>
+
+      <p>在貨架林立的賣場銀河，一位平凡的消費者開始翻轉每一件商品，只為了尋找那行小小的字——「原產地」。</p>
+
+      <p>品牌來自日本，就一定是日本製嗎？並不盡然。同一個品牌的不同商品，可能來自完全不同的星系。</p>
+
+      <p>於是，小本本誕生了。</p>
+
+      <p><span class="c red">紅色</span>，代表中國製。<br>
+         <span class="c green">綠色</span>，代表台灣製。<br>
+         <span class="c blue">藍色</span>，代表與品牌同國。<br>
+         <span class="c yellow">黃色</span>，代表他國代工。</p>
+
+      <p>每一筆紀錄，都是親自走進通路、親眼確認包裝後寫下的。歡迎所有人自由查詢，但登錄的權力，只屬於站長一人……</p>
+
+      <p>現在，翻開小本本，看看你手上的那一件商品，究竟來自哪裡。</p>
+
+      <p class="end">— 進入小本本 —</p>
+    </div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn" id="replay" type="button">重播</button>
+  <a class="btn primary" href="notebook.html">進入小本本</a>
+</div>
+
+<script>
+  // 星空
+  const cv = document.getElementById("stars"), ctx = cv.getContext("2d");
+  function drawStars() {
+    const dpr = window.devicePixelRatio || 1, w = innerWidth, h = innerHeight;
+    cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+    const n = Math.round(w * h / 2600);
+    for (let i = 0; i < n; i++) {
+      const r = Math.random() < .9 ? Math.random() * .8 + .3 : Math.random() * 1.2 + .9;
+      ctx.globalAlpha = Math.random() * .7 + .3;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, 6.2832); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  drawStars();
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawStars, 200); });
+
+  // 重播
+  const stage = document.getElementById("stage");
+  document.getElementById("replay").addEventListener("click", () => {
+    stage.classList.remove("play"); void stage.offsetWidth; stage.classList.add("play");
+    window.scrollTo(0, 0);
+  });
+</script>
+</body>
+</html>
