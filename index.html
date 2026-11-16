@@ -3,155 +3,483 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#ffffff">
 <title>原產地小本本</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<!--
+  ============================================================
+  使用說明（站長設定）
+  ============================================================
+  1. 建立 Google 試算表，第一列標題請依序（名稱需一致）：
+       產品名 | 品牌 | 品牌國家 | 原產地 | 大類 | 小類 | 通路 | 備註 | 查看日期
+     （品牌國家、備註、查看日期可留空）
+  2. 試算表：檔案 → 分享 → 發布到網路 → 選擇「工作表」與「逗號分隔值 (.csv)」→ 發布，複製網址。
+  3. 把網址貼到下方 SHEET_CSV_URL 的引號內。
+  4. 把這個 HTML 放到 GitHub Pages / Netlify 等可連外的空間即可。
+  之後你只要在手機上用 Google 試算表 App 新增列，網站就會更新。
+  SHEET_CSV_URL 留空時，網站會顯示內建的範例資料。
+-->
 <style>
-  :root { --yellow: #ffe81f; --cyan: #4bd5ee; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: #000; }
-  body { font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; color: var(--yellow); overflow: hidden; }
+  :root {
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #5d646c;
+    --line: #dfe2e6;
 
-  #stars { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  .stage { position: fixed; inset: 0; overflow: hidden; }
+    --red-bg: #fdeaea;   --red: #d93036;   --red-ink: #7f1519;
+    --green-bg: #e5f5ea; --green: #25915a; --green-ink: #145233;
+    --blue-bg: #e6f0fd;  --blue: #2f6fdb;  --blue-ink: #173f87;
+    --yellow-bg: #fff4cc;--yellow: #e0a400;--yellow-ink: #6b4e00;
+    --gray-bg: #eceef0;  --gray: #8a9097;  --gray-ink: #3f454b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-padding-top: 140px; }
+  body {
+    margin: 0;
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 
-  /* 1. 開場藍字 */
-  .intro {
-    position: absolute; inset: 0; display: grid; place-items: center; padding: 0 28px;
-    color: var(--cyan); font-size: clamp(18px, 5.2vw, 28px); line-height: 1.7; text-align: left; opacity: 0;
-  }
-  .intro p { margin: 0; max-width: 20em; }
-  .play .intro { animation: intro 5.5s ease-in-out .6s forwards; }
-  @keyframes intro { 0% { opacity: 0 } 18%, 82% { opacity: 1 } 100% { opacity: 0 } }
+  header { background: var(--surface); padding: calc(18px + env(safe-area-inset-top, 0px)) 0 12px; }
+  h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: .02em; }
+  .sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 
-  /* 2. 標題縮遠 */
-  .logo { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; opacity: 0; }
-  .logo h1 {
-    margin: 0; font-weight: 900; color: var(--yellow); line-height: 1.12; letter-spacing: .08em;
-    font-size: clamp(60px, 22vw, 120px); padding-left: .08em;
+  .sticky { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); padding: 0 0 10px; }
+  .sticky .wrap { padding-top: 0; }
+  .searchrow { display: flex; gap: 8px; }
+  .search { flex: 1; position: relative; }
+  .search input {
+    width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 40px 0 14px; font: inherit; font-size: 16px; background: var(--bg); color: var(--text);
   }
-  .play .logo { animation: logo 10s ease-in 6.6s forwards; }
-  @keyframes logo {
-    0% { opacity: 1; transform: scale(1.8); }
-    55% { opacity: 1; }
-    100% { opacity: 0; transform: scale(.04); }
+  .search input:focus { outline: 2px solid var(--text); outline-offset: 0; background: var(--surface); }
+  .search .clear {
+    position: absolute; right: 4px; top: 4px; width: 38px; height: 38px; border: 0; background: transparent;
+    font-size: 20px; color: var(--muted); display: none; cursor: pointer;
   }
-
-  /* 3. 字幕捲動 */
-  .crawl-wrap {
-    position: absolute; inset: 0; perspective: 340px; overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 4%, #000 38%);
-            mask-image: linear-gradient(to bottom, transparent 4%, #000 38%);
-  }
-  .crawl {
-    position: absolute; top: 100%; left: 50%; width: min(86vw, 520px); margin-left: calc(min(86vw, 520px) / -2);
-    transform-origin: 50% 0; transform: rotateX(26deg);
-    font-size: clamp(22px, 6.4vw, 34px); font-weight: 500; line-height: 1.7; text-align: justify; letter-spacing: .04em;
-    color: var(--yellow);
-  }
-  .play .crawl { animation: crawl 70s linear 8s forwards; }
-  @keyframes crawl {
-    from { transform: rotateX(26deg) translateY(0); }
-    to   { transform: rotateX(26deg) translateY(calc(-100% - 100vh)); }
-  }
-  .crawl .ep { text-align: center; margin: 0 0 .2em; letter-spacing: .2em; }
-  .crawl .title { text-align: center; font-weight: 900; margin: 0 0 1.2em; font-size: 1.15em; }
-  .crawl p { margin: 0 0 1.2em; }
-  .crawl .c { font-weight: 900; }
-  .c.red { color: #ff6b6f; } .c.green { color: #4fd98d; } .c.blue { color: #6ea8ff; } .c.yellow { color: var(--yellow); }
-  .crawl .end { text-align: center; font-weight: 900; font-size: 1.1em; margin-top: 1.4em; }
-
-  /* 按鈕 */
-  .actions {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; gap: 10px;
-    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  }
+  .search.has-text .clear { display: block; }
   .btn {
-    height: 48px; padding: 0 22px; border-radius: 10px; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;
-    border: 1.5px solid var(--yellow); background: transparent; color: var(--yellow); text-decoration: none;
-    display: inline-flex; align-items: center; justify-content: center;
+    height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+    font: inherit; font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; white-space: nowrap;
   }
-  .btn.primary { background: var(--yellow); color: #000; font-weight: 900; }
-  .btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .btn:focus-visible, .chip:focus-visible, .tag:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .btn .badge {
+    display: inline-block; min-width: 20px; height: 20px; line-height: 20px; border-radius: 10px;
+    background: var(--text); color: #fff; font-size: 12px; text-align: center; margin-left: 4px; padding: 0 5px;
+  }
 
-  /* 減少動態：改為靜態可捲動頁面 */
-  @media (prefers-reduced-motion: reduce) {
-    body { overflow: auto; }
-    .stage { position: static; overflow: visible; padding: 56px 0 120px; }
-    .intro { display: none; }
-    .logo { position: static; opacity: 1; padding: 0 0 32px; }
-    .crawl-wrap { position: static; perspective: none; overflow: visible; -webkit-mask-image: none; mask-image: none; }
-    .crawl { position: static; margin: 0 auto; transform: none; }
-    .play .logo, .play .crawl, .play .intro { animation: none; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 2px; margin: 0 -16px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px;
+    border: 1px solid var(--line); border-radius: 18px; background: var(--surface);
+    font: inherit; font-size: 14px; color: var(--text); cursor: pointer;
+  }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gray); }
+  .chip .n { color: var(--muted); font-size: 12px; }
+  .chip[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: #fff; }
+  .chip[aria-pressed="true"] .n { color: #d0d4d8; }
+  .dot.red { background: var(--red); } .dot.green { background: var(--green); } .dot.blue { background: var(--blue); }
+  .dot.yellow { background: var(--yellow); } .dot.gray { background: var(--gray); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; }
+  .tags:empty { display: none; }
+  .tag {
+    border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 3px 10px; font: inherit;
+    font-size: 13px; color: var(--text); cursor: pointer;
+  }
+  .tag::after { content: " ×"; color: var(--muted); }
+
+  .notice { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--yellow-bg); color: var(--yellow-ink); font-size: 13px; }
+  .notice[hidden] { display: none; }
+
+  .statbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 8px; font-size: 14px; color: var(--muted); }
+  .statbar select { border: 0; background: transparent; font: inherit; font-size: 14px; color: var(--text); padding: 4px; }
+
+  .list { display: grid; gap: 10px; padding-bottom: 24px; }
+  .card { border-radius: 12px; padding: 14px 14px 12px; border-left: 6px solid var(--gray); background: var(--gray-bg); color: var(--gray-ink); }
+  .card.red { background: var(--red-bg); border-left-color: var(--red); color: var(--red-ink); }
+  .card.green { background: var(--green-bg); border-left-color: var(--green); color: var(--green-ink); }
+  .card.blue { background: var(--blue-bg); border-left-color: var(--blue); color: var(--blue-ink); }
+  .card.yellow { background: var(--yellow-bg); border-left-color: var(--yellow); color: var(--yellow-ink); }
+  .card .top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .card .name { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.35; color: var(--text); }
+  .card .brand { margin: 2px 0 0; font-size: 14px; color: inherit; }
+  .pill {
+    flex: none; border-radius: 8px; padding: 4px 9px; font-size: 13px; font-weight: 700; color: #fff; background: var(--gray); white-space: nowrap;
+  }
+  .red .pill { background: var(--red); } .green .pill { background: var(--green); } .blue .pill { background: var(--blue); }
+  .yellow .pill { background: var(--yellow); color: #3a2a00; }
+  .meta { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: inherit; }
+  .meta span { white-space: nowrap; }
+  .meta b { font-weight: 500; opacity: .75; }
+  .kind { margin: 8px 0 0; font-size: 12.5px; opacity: .85; }
+  .note { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid rgba(0,0,0,.12); font-size: 13px; color: var(--text); }
+
+  .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+  .empty strong { display: block; font-size: 16px; color: var(--text); margin-bottom: 4px; }
+  .empty button { margin-top: 14px; }
+
+  footer { padding: 8px 0 32px; font-size: 13px; color: var(--muted); }
+  footer h2 { font-size: 14px; margin: 0 0 8px; color: var(--text); }
+  footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  footer li { display: flex; gap: 8px; align-items: flex-start; }
+  footer .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; flex: none; }
+
+  /* 篩選面板 */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 40; display: none; }
+  .scrim.open { display: block; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--surface);
+    border-radius: 16px 16px 0 0; max-height: 86vh; display: none; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sheet.open { display: flex; }
+  .sheet-inner { width: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; min-height: 0; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 8px; }
+  .sheet-head h2 { margin: 0; font-size: 18px; }
+  .sheet-head button { border: 0; background: transparent; font: inherit; font-size: 15px; color: var(--muted); padding: 8px; cursor: pointer; }
+  .sheet-body { overflow-y: auto; padding: 4px 16px 12px; display: grid; gap: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field select {
+    width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px;
+    font: inherit; font-size: 16px; background: var(--surface); color: var(--text);
+  }
+  .field select:disabled { background: var(--bg); color: var(--muted); }
+  .sheet-foot { display: flex; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+  .sheet-foot .btn { flex: 1; }
+  .btn.primary { background: var(--text); border-color: var(--text); color: #fff; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sheet.open { animation: up .18s ease-out; }
+    @keyframes up { from { transform: translateY(24px); opacity: .4; } to { transform: none; opacity: 1; } }
   }
 </style>
 </head>
 <body>
 
-<canvas id="stars" aria-hidden="true"></canvas>
+<header>
+  <div class="wrap">
+    <h1>原產地小本本</h1>
+    <p class="sub">親自看包裝，記下每一件商品的原產地</p>
+  </div>
+</header>
 
-<div class="stage play" id="stage">
-  <div class="intro"><p>很久很久以前，<br>在一間再普通不過的賣場裡……</p></div>
+<div class="sticky">
+  <div class="wrap">
+    <div class="searchrow">
+      <div class="search" id="searchBox">
+        <input id="q" type="search" inputmode="search" enterkeyhint="search" placeholder="搜尋產品、品牌、分類、通路" autocomplete="off" aria-label="搜尋">
+        <button class="clear" id="clearQ" aria-label="清除搜尋">×</button>
+      </div>
+      <button class="btn" id="openFilter" aria-haspopup="dialog">篩選<span class="badge" id="fBadge" hidden>0</span></button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="依原產地顏色篩選"></div>
+    <div class="tags" id="tags"></div>
+  </div>
+</div>
 
-  <div class="logo"><h1>原產地<br>小本本</h1></div>
+<main class="wrap">
+  <div class="notice" id="notice" hidden></div>
+  <div class="statbar">
+    <span id="count">載入中…</span>
+    <label>排序：
+      <select id="sort" aria-label="排序方式">
+        <option value="date">最新查看</option>
+        <option value="name">產品名</option>
+        <option value="origin">原產地</option>
+      </select>
+    </label>
+  </div>
+  <div class="list" id="list" aria-live="polite"></div>
 
-  <div class="crawl-wrap">
-    <div class="crawl">
-      <p class="ep">第一章</p>
-      <p class="title">包裝背面的祕密</p>
+  <footer>
+    <h2>顏色說明</h2>
+    <ul>
+      <li><span class="dot" style="background:var(--red)"></span><span><b>紅色</b>：原產地為中國（不論品牌）</span></li>
+      <li><span class="dot" style="background:var(--green)"></span><span><b>綠色</b>：原產地為台灣（不論品牌）</span></li>
+      <li><span class="dot" style="background:var(--blue)"></span><span><b>藍色</b>：原產地與品牌所屬國相同</span></li>
+      <li><span class="dot" style="background:var(--yellow)"></span><span><b>黃色</b>：原產地與品牌所屬國不同（他國代工）</span></li>
+      <li><span class="dot" style="background:var(--gray)"></span><span><b>灰色</b>：原產地未標示，或品牌國家未知而無法判斷</span></li>
+    </ul>
+  </footer>
+</main>
 
-      <p>在貨架林立的賣場銀河，一位平凡的消費者開始翻轉每一件商品，只為了尋找那行小小的字——「原產地」。</p>
-
-      <p>品牌來自日本，就一定是日本製嗎？並不盡然。同一個品牌的不同商品，可能來自完全不同的星系。</p>
-
-      <p>於是，小本本誕生了。</p>
-
-      <p><span class="c red">紅色</span>，代表中國製。<br>
-         <span class="c green">綠色</span>，代表台灣製。<br>
-         <span class="c blue">藍色</span>，代表與品牌同國。<br>
-         <span class="c yellow">黃色</span>，代表他國代工。</p>
-
-      <p>每一筆紀錄，都是親自走進通路、親眼確認包裝後寫下的。歡迎所有人自由查詢，但登錄的權力，只屬於站長一人……</p>
-
-      <p>現在，翻開小本本，看看你手上的那一件商品，究竟來自哪裡。</p>
-
-      <p class="end">— 進入小本本 —</p>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">篩選條件</h2>
+      <button id="closeSheet">關閉</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field"><label for="fCat">產品分類（大項）</label><select id="fCat"></select></div>
+      <div class="field"><label for="fSub">產品分類（小項）</label><select id="fSub"></select></div>
+      <div class="field"><label for="fOrigin">原產地</label><select id="fOrigin"></select></div>
+      <div class="field"><label for="fBrand">品牌</label><select id="fBrand"></select></div>
+      <div class="field"><label for="fChannel">通路</label><select id="fChannel"></select></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="resetAll">清除全部</button>
+      <button class="btn primary" id="applySheet">查看結果</button>
     </div>
   </div>
 </div>
 
-<div class="actions">
-  <button class="btn" id="replay" type="button">重播</button>
-  <a class="btn primary" href="notebook.html">進入小本本</a>
-</div>
-
 <script>
-  // 星空
-  const cv = document.getElementById("stars"), ctx = cv.getContext("2d");
-  function drawStars() {
-    const dpr = window.devicePixelRatio || 1, w = innerWidth, h = innerHeight;
-    cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
-    const n = Math.round(w * h / 2600);
-    for (let i = 0; i < n; i++) {
-      const r = Math.random() < .9 ? Math.random() * .8 + .3 : Math.random() * 1.2 + .9;
-      ctx.globalAlpha = Math.random() * .7 + .3;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, 6.2832); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-  drawStars();
-  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawStars, 200); });
+/* ============ 站長設定 ============ */
+// 貼上「發布到網路」的 CSV 網址；留空則顯示內建範例資料
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ47CyUjExLKLOZ8EEKm2HnNd7OkZvs9g2VQLRBWaSUT6Nc_gkYpaEjAeOI0trvbHtldzlXse11ROAJ/pub?output=csv";
+/* ================================== */
 
-  // 重播
-  const stage = document.getElementById("stage");
-  document.getElementById("replay").addEventListener("click", () => {
-    stage.classList.remove("play"); void stage.offsetWidth; stage.classList.add("play");
-    window.scrollTo(0, 0);
-  });
+const SAMPLE = [
+  ["柔拭濕紙巾 80 抽","森語","台灣","中國","日用品","濕紙巾","全聯","包裝背面標示中國製造","2026-11-14"],
+  ["嬰兒純水濕紙巾 70 抽","暖暖","台灣","台灣","日用品","濕紙巾","康是美","","2026-11-13"],
+  ["厚棉抽取衛生紙 10 包","清澄","日本","日本","日用品","衛生紙","家樂福","","2026-11-12"],
+  ["保濕護手霜 50g","白露","日本","越南","美妝保養","護手霜","屈臣氏","","2026-11-12"],
+  ["不鏽鋼保溫瓶 500ml","山岳","美國","中國","廚房用品","保溫瓶","家樂福","","2026-11-10"],
+  ["檸檬洗碗精 800ml","晴天","台灣","台灣","清潔用品","洗碗精","全聯","","2026-11-09"],
+  ["濃縮洗衣球 30 顆","潔森","韓國","韓國","清潔用品","洗衣球","大創","","2026-11-09"],
+  ["海鹽蘇打餅 12 入","麥穗","台灣","馬來西亞","食品","餅乾","全聯","同品牌不同口味產地不同","2026-11-08"],
+  ["Type-C 快充線 1m","速聯","","中國","3C 配件","充電線","大創","品牌國家網路上查不到","2026-11-07"],
+  ["竹纖維毛巾 3 入","家適","","越南","日用品","毛巾","家樂福","","2026-11-06"],
+  ["止滑瑜伽墊 6mm","躍動","美國","台灣","運動用品","瑜伽墊","迪卡儂","","2026-11-05"],
+  ["細毛牙刷 4 入","微笑","日本","中國","日用品","牙刷","康是美","","2026-11-04"],
+  ["中烘焙咖啡豆 454g","晨煙","美國","美國","食品","咖啡豆","好市多","","2026-11-03"],
+  ["黑巧克力 70% 100g","金榛","比利時","比利時","食品","巧克力","全聯","","2026-11-02"],
+  ["防水衛生手套 100 入","安潔","台灣","","廚房用品","手套","全聯","包裝未標示原產地","2026-11-01"]
+].map(r => ({ name:r[0], brand:r[1], brandCountry:r[2], origin:r[3], cat:r[4], sub:r[5], channel:r[6], note:r[7], date:r[8] }));
+
+/* ---------- 國家名稱正規化 ---------- */
+const ALIAS = {
+  "中國":["中國","中国","中國大陸","中国大陆","大陸","大陆","中華人民共和國","china","cn","prc","made in china","中國製","中國製造"],
+  "台灣":["台灣","臺灣","台湾","taiwan","tw","roc","made in taiwan","台灣製","台灣製造","臺灣製造"],
+  "日本":["日本","japan","jp","日本製","日本製造"],
+  "美國":["美國","美国","usa","us","united states","america","美國製","美國製造"],
+  "韓國":["韓國","韩国","korea","south korea","kr","韓國製"],
+  "越南":["越南","vietnam","vn","越南製"],
+  "泰國":["泰國","泰国","thailand","th"],
+  "馬來西亞":["馬來西亞","马来西亚","malaysia","my"],
+  "德國":["德國","德国","germany","de"],
+  "法國":["法國","法国","france","fr"],
+  "英國":["英國","英国","uk","united kingdom","britain"]
+};
+const ALIAS_MAP = {};
+for (const k in ALIAS) ALIAS[k].forEach(a => ALIAS_MAP[a.toLowerCase()] = k);
+const norm = s => { s = (s||"").trim(); return ALIAS_MAP[s.toLowerCase()] || s; };
+
+/* ---------- 顏色判斷 ---------- */
+function colorOf(r) {
+  const o = norm(r.origin), b = norm(r.brandCountry);
+  if (!o) return "gray";
+  if (o === "中國") return "red";
+  if (o === "台灣") return "green";
+  if (!b) return "gray";
+  return o === b ? "blue" : "yellow";
+}
+const COLOR_LABEL = { red:"中國製", green:"台灣製", blue:"同品牌國", yellow:"他國代工", gray:"未明" };
+function pillText(r, c) {
+  const o = (r.origin||"").trim();
+  if (!o) return "未標示";
+  if (c === "red" || c === "green") return COLOR_LABEL[c];
+  return o + "製";
+}
+function kindText(r, c) {
+  const b = (r.brandCountry||"").trim();
+  if (c === "red" || c === "green" || c === "blue" || c === "yellow") return b ? "品牌國家：" + b : "";
+  if (!(r.origin||"").trim()) return b ? "品牌國家：" + b : "";
+  return "品牌國家未填，無法判斷";
+}
+
+/* ---------- CSV 解析 ---------- */
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, "");
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i+1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i+1] === "\n") i++;
+      row.push(cell); cell = ""; rows.push(row); row = [];
+    } else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ""));
+}
+function rowsToRecords(rows) {
+  if (rows.length < 2) return [];
+  const H = rows[0].map(h => h.trim());
+  const idx = n => H.indexOf(n);
+  const col = { name:idx("產品名"), brand:idx("品牌"), brandCountry:idx("品牌國家"), origin:idx("原產地"),
+    cat:idx("大類"), sub:idx("小類"), channel:idx("通路"), note:idx("備註"), date:idx("查看日期") };
+  if (col.name < 0) throw new Error("找不到「產品名」欄位");
+  const g = (r, k) => col[k] >= 0 ? (r[col[k]] || "").trim() : "";
+  return rows.slice(1).map(r => ({
+    name:g(r,"name"), brand:g(r,"brand"), brandCountry:g(r,"brandCountry"), origin:g(r,"origin"),
+    cat:g(r,"cat"), sub:g(r,"sub"), channel:g(r,"channel"), note:g(r,"note"), date:g(r,"date")
+  })).filter(r => r.name);
+}
+
+/* ---------- 狀態 ---------- */
+let DATA = [];
+const S = { q:"", color:"", cat:"", sub:"", origin:"", brand:"", channel:"", sort:"date" };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b, "zh-Hant"));
+
+function matches(r, skipColor) {
+  if (S.cat && r.cat !== S.cat) return false;
+  if (S.sub && r.sub !== S.sub) return false;
+  if (S.origin && norm(r.origin) !== S.origin) return false;
+  if (S.brand && r.brand !== S.brand) return false;
+  if (S.channel && r.channel !== S.channel) return false;
+  if (!skipColor && S.color && r._c !== S.color) return false;
+  if (S.q) {
+    const hay = [r.name, r.brand, r.brandCountry, r.origin, r.cat, r.sub, r.channel, r.note].join(" ").toLowerCase();
+    return S.q.toLowerCase().split(/\s+/).filter(Boolean).every(t => hay.includes(t));
+  }
+  return true;
+}
+
+function render() {
+  // 色彩晶片（數字不含顏色篩選本身）
+  const base = DATA.filter(r => matches(r, true));
+  const cnt = { red:0, green:0, blue:0, yellow:0, gray:0 };
+  base.forEach(r => cnt[r._c]++);
+  const defs = [["","全部",base.length],["red","中國製",cnt.red],["green","台灣製",cnt.green],
+                ["blue","同品牌國",cnt.blue],["yellow","他國代工",cnt.yellow],["gray","未明",cnt.gray]];
+  $("chips").innerHTML = defs.map(d =>
+    `<button class="chip" data-c="${d[0]}" aria-pressed="${S.color === d[0]}">${d[0] ? `<span class="dot ${d[0]}"></span>` : ""}${d[1]} <span class="n">${d[2]}</span></button>`
+  ).join("");
+
+  // 已套用條件標籤
+  const tagDefs = [["cat","大類"],["sub","小類"],["origin","原產地"],["brand","品牌"],["channel","通路"]];
+  const tags = tagDefs.filter(t => S[t[0]]).map(t => `<button class="tag" data-k="${t[0]}">${t[1]}：${esc(S[t[0]])}</button>`);
+  $("tags").innerHTML = tags.join("");
+  const n = tags.length;
+  $("fBadge").textContent = n; $("fBadge").hidden = n === 0;
+
+  // 結果
+  let res = DATA.filter(r => matches(r, false));
+  const by = {
+    date: (a,b) => (b.date||"").localeCompare(a.date||""),
+    name: (a,b) => a.name.localeCompare(b.name, "zh-Hant"),
+    origin: (a,b) => (a.origin||"~").localeCompare(b.origin||"~", "zh-Hant") || a.name.localeCompare(b.name, "zh-Hant")
+  };
+  res.sort(by[S.sort]);
+  $("count").textContent = `共 ${res.length} 筆`;
+
+  if (!res.length) {
+    $("list").innerHTML = `<div class="empty"><strong>找不到符合的商品</strong>換個關鍵字，或放寬篩選條件試試。<br><button class="btn" id="emptyReset">清除搜尋與篩選</button></div>`;
+    $("emptyReset").onclick = resetAll;
+    return;
+  }
+  $("list").innerHTML = res.map(r => {
+    const c = r._c, kt = kindText(r, c);
+    return `<article class="card ${c}">
+      <div class="top">
+        <div><h3 class="name">${esc(r.name)}</h3><p class="brand">${esc(r.brand || "品牌未填")}</p></div>
+        <span class="pill">${esc(pillText(r, c))}</span>
+      </div>
+      <div class="meta">
+        <span><b>分類</b> ${esc([r.cat, r.sub].filter(Boolean).join(" › ") || "—")}</span>
+        <span><b>通路</b> ${esc(r.channel || "—")}</span>
+        ${r.date ? `<span><b>查看</b> ${esc(r.date)}</span>` : ""}
+      </div>
+      ${kt ? `<p class="kind">${esc(kt)}</p>` : ""}
+      ${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}
+    </article>`;
+  }).join("");
+}
+
+/* ---------- 篩選面板 ---------- */
+function fillOptions(id, values, current, allLabel) {
+  const el = $(id);
+  el.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${esc(v)}"${v === current ? " selected" : ""}>${esc(v)}</option>`).join("");
+}
+function buildSheet() {
+  fillOptions("fCat", uniq(DATA.map(r => r.cat)), S.cat, "全部大類");
+  const subs = uniq(DATA.filter(r => !S.cat || r.cat === S.cat).map(r => r.sub));
+  fillOptions("fSub", subs, S.sub, S.cat ? "全部小類" : "全部小類");
+  fillOptions("fOrigin", uniq(DATA.map(r => norm(r.origin))), S.origin, "全部原產地");
+  fillOptions("fBrand", uniq(DATA.map(r => r.brand)), S.brand, "全部品牌");
+  fillOptions("fChannel", uniq(DATA.map(r => r.channel)), S.channel, "全部通路");
+}
+let lastFocus = null;
+function openSheet() { buildSheet(); lastFocus = document.activeElement; $("scrim").classList.add("open"); $("sheet").classList.add("open"); $("applySheet").focus(); }
+function closeSheet() { $("scrim").classList.remove("open"); $("sheet").classList.remove("open"); if (lastFocus) lastFocus.focus(); }
+function resetAll() {
+  Object.assign(S, { q:"", color:"", cat:"", sub:"", origin:"", brand:"", channel:"" });
+  $("q").value = ""; $("searchBox").classList.remove("has-text");
+  render(); if ($("sheet").classList.contains("open")) buildSheet();
+}
+
+/* ---------- 事件 ---------- */
+let timer;
+$("q").addEventListener("input", e => {
+  $("searchBox").classList.toggle("has-text", !!e.target.value);
+  clearTimeout(timer);
+  timer = setTimeout(() => { S.q = e.target.value.trim(); render(); }, 150);
+});
+$("clearQ").onclick = () => { $("q").value = ""; $("searchBox").classList.remove("has-text"); S.q = ""; render(); $("q").focus(); };
+$("chips").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  S.color = b.dataset.c; render();
+});
+$("tags").addEventListener("click", e => {
+  const b = e.target.closest(".tag"); if (!b) return;
+  S[b.dataset.k] = ""; if (b.dataset.k === "cat") S.sub = ""; render();
+});
+$("sort").onchange = e => { S.sort = e.target.value; render(); };
+$("openFilter").onclick = openSheet;
+$("closeSheet").onclick = closeSheet;
+$("scrim").onclick = closeSheet;
+$("applySheet").onclick = closeSheet;
+$("resetAll").onclick = resetAll;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("sheet").classList.contains("open")) closeSheet(); });
+$("fCat").onchange = e => { S.cat = e.target.value; S.sub = ""; buildSheet(); render(); };
+$("fSub").onchange = e => { S.sub = e.target.value; render(); };
+$("fOrigin").onchange = e => { S.origin = e.target.value; render(); };
+$("fBrand").onchange = e => { S.brand = e.target.value; render(); };
+$("fChannel").onchange = e => { S.channel = e.target.value; render(); };
+
+/* ---------- 載入資料 ---------- */
+function setData(arr) { DATA = arr; DATA.forEach(r => r._c = colorOf(r)); render(); }
+function showNotice(t) { $("notice").textContent = t; $("notice").hidden = !t; }
+
+async function init() {
+  if (!SHEET_CSV_URL) {
+    showNotice("目前顯示的是範例資料（品牌與商品皆為虛構）。完成站長設定後會改為顯示你的資料。");
+    setData(SAMPLE); return;
+  }
+  setData([]); $("count").textContent = "載入中…";
+  const KEY = "origin-notebook-cache";
+  try {
+    const res = await fetch(SHEET_CSV_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const recs = rowsToRecords(parseCSV(text));
+    try { localStorage.setItem(KEY, JSON.stringify(recs)); } catch (e) {}
+    showNotice(""); setData(recs);
+  } catch (err) {
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+    if (cached && cached.length) { showNotice("無法連線，顯示上次載入的資料。"); setData(cached); }
+    else { showNotice("資料載入失敗，目前顯示範例資料。請檢查網路或試算表發布設定。"); setData(SAMPLE); }
+  }
+}
+init();
 </script>
 </body>
 </html>
